@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 from privacy_config import (
     LLM_GUARD_CONFIG,
     LLAMA_GUARD_CONFIG,
+    PII_PATTERNS,
     REDACTION_RULES,
     VIOLATION_CONFIG,
     get_privacy_config,
@@ -299,6 +300,7 @@ class PrivacySanitizer:
                 text,
             )
 
+        # 16. Phone numbers
         if re.search(REDACTION_RULES["phones"]["pattern"], text):
             pii_found.append("phone")
             text = re.sub(
@@ -307,6 +309,7 @@ class PrivacySanitizer:
                 text,
             )
 
+        # 17. IP addresses
         if re.search(PII_PATTERNS["IP_ADDRESS"], text):
             pii_found.append("ip_address")
             text = re.sub(
@@ -327,6 +330,9 @@ class PrivacySanitizer:
         return text
 
 
+# ============================================================================
+# CUSTOM INJECTION & DATA LEAKAGE DETECTION
+# ============================================================================
 
 INJECTION_PATTERNS = {
     "prompt_override": [
@@ -380,18 +386,26 @@ def _detect_data_leakage(text: str) -> List[str]:
     text_lower = text.lower()
 
     # Check for sensitive keywords combined with data extraction verbs
-    extraction_verbs = r"(?i)(show|print|display|dump|list|reveal|extract|leak|expose)"
-    sensitive_combo = r"(?i)(password|secret|key|token|config|database|credential|api_key)"
+    extraction_verbs = r"(show|print|display|dump|list|reveal|extract|leak|expose)"
+    sensitive_combo = r"(password|secret|key|token|config|database|credential|api_key)"
 
-    if re.search(f"{extraction_verbs}.*{sensitive_combo}|{sensitive_combo}.*{extraction_verbs}", text):
+    if re.search(
+        f"{extraction_verbs}.*{sensitive_combo}|{sensitive_combo}.*{extraction_verbs}",
+        text,
+        re.IGNORECASE,
+    ):
         detected.append("data_extraction_attempt")
 
     # Check for suspicious SQL patterns
-    if re.search(r"(?i)(SELECT|INSERT|UPDATE|DELETE|DROP|UNION).*(?:FROM|INTO)", text):
+    if re.search(r"(SELECT|INSERT|UPDATE|DELETE|DROP|UNION).*(?:FROM|INTO)", text, re.IGNORECASE):
         detected.append("sql_injection_attempt")
 
     # Check for file access attempts
-    if re.search(r"(?i)(read|open|load).*(?:file|config|\.env|\.secret|\.key|\.pem)", text):
+    if re.search(
+        r"(read|open|load).*(?:file|config|\.env|\.secret|\.key|\.pem)",
+        text,
+        re.IGNORECASE,
+    ):
         detected.append("file_access_attempt")
 
     return detected
@@ -658,12 +672,17 @@ class LlamaGuardScanner:
         self.available = _LLAMA_GUARD_AVAILABLE
         self.model = None
         self.tokenizer = None
-
-        if self.available:
-            self._load_model()
+        self._load_attempted = False
 
     def _load_model(self):
         """Lazy load Llama Guard model and tokenizer"""
+        if self._load_attempted:
+            return
+
+        self._load_attempted = True
+        if not self.available:
+            return
+
         try:
             model_id = LLAMA_GUARD_CONFIG.get("model", "meta-llama/Llama-2-7b-chat-hf")
             logger.info(f"Loading Llama Guard model: {model_id}")
@@ -689,6 +708,9 @@ class LlamaGuardScanner:
             'details': Dict
         }
         """
+        if not self.available or self.model is None:
+            self._load_model()
+
         if not self.available or self.model is None:
             return {
                 "safe": True,

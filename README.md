@@ -96,5 +96,5 @@ Every response can be automatically evaluated if `Evaluate answers` is checked. 
 
 ---
 
-**Maintained by**: Security Team  
+**Maintained by**: Saurabh Bhandariii
 **Version**: 2.0 (Privacy-First)

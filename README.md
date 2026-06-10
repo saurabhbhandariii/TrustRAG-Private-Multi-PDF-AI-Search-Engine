@@ -1,183 +1,100 @@
-#  🔒 Multi-PDF RAG System - Privacy-First Edition
+# TrustRAG: Private Multi-PDF AI Search Engine
+A powerful, privacy-aware Retrieval-Augmented Generation (RAG) application built with **Streamlit**, featuring hybrid retrieval, robust security guardrails, artifact generation, and automated response evaluation.
 
-A **100% free**, fully local Retrieval-Augmented Generation (RAG) app with **enterprise-grade privacy protection**.
+## Key Features
 
-Upload any number of PDFs and ask questions — answers are grounded strictly in your documents.  
-**All data stays local. Automatic PII redaction. Multi-layer security guards.**
+- **Hybrid Retrieval Architecture**: Combines Dense Vector Search (FAISS) and Sparse Keyword Search (BM25) via Reciprocal Rank Fusion (RRF) for highly accurate document retrieval.
+- **Multi-Layer Security (LLM Guard)**: Complete input and output sanitization to prevent prompt injections, toxicity, and unauthorized data leakage.
+- **Automatic PII Redaction**: Automatically masks sensitive information (Emails, Phones, Credit Cards, API Keys, SSNs) from both uploaded documents and generated responses.
+- **Dynamic Artifact Generation**: Automatically parses data to generate rich artifacts including Excel spreadsheets, Word documents, PDF reports, and visual charts (Pie, Bar, Line, Histogram).
+- **Automated Response Evaluation**: Integrates **DeepEval** to automatically score generated answers on Relevancy, Faithfulness, and Hallucination, with a deterministic fallback mode for offline/local environments.
+- **High-Performance LLMs**: Powered by the Groq API utilizing state-of-the-art models (`llama-3.3-70b-versatile`, `llama3-70b-8192`, `mixtral-8b-32768`).
+- **Compliance & Audit Trails**: Maintains hashed violation logging in `violations.jsonl` for enterprise compliance and auditing.
 
-## ✨ What's New in v2.0
-
-🔐 **LLM Guard Integration** — 6 input scanners + 4 output scanners  
-👤 **Llama Guard** — Advanced content safety (optional)  
-🛡️ **Automatic PII Protection** — Email, phone, credit cards, API keys masked  
-📊 **Privacy-Safe Exports** — PDF, Excel, Word, PowerPoint all sanitized  
-📝 **Audit Trail** — Hashed violation logging for compliance  
-⚙️ **3 Privacy Levels** — STRICT, STANDARD, BASIC (choose your balance)  
-
-**👉 [Quick Start with Privacy](./SETUP_PRIVACY.md)** | **[Full Privacy Docs](./PRIVACY.md)** | **[What Changed](./IMPROVEMENT_SUMMARY.md)**
-
---
-
-##  Project Structure
+## Project Structure
 
 ```
-multi_pdf_rag/
-├── app.py                           ← Main Streamlit app (ENHANCED with privacy)
-├── guard_utils.py                   ← LLM Guard + Llama Guard (NEW)
-├── privacy_config.py                ← Privacy configuration (NEW)
-├── utils/privacy_output_formatter.py ← Safe exports (NEW)
-├── requirements.txt                 ← All dependencies (UPDATED)
-├── PRIVACY.md                       ← Privacy architecture (NEW)
-├── SETUP_PRIVACY.md                 ← Quick start guide (NEW)
-├── IMPROVEMENT_SUMMARY.md           ← What changed (NEW)
-├── .env.example                     ← Configuration template (NEW)
-└── violations.jsonl                 ← Audit trail (AUTO-GENERATED)
+multi_pdf_rag-main/
+├── app.py                           # Main Streamlit application and UI
+├── guard_utils.py                   # Privacy & Security Guard integrations
+├── privacy_config.py                # Configuration for privacy levels and PII patterns
+├── guards/                          # Policies and additional security guard layers
+├── utils/                           # Output detection and privacy-aware artifact formatters
+├── requirements.txt                 # Project dependencies
+├── PRIVACY.md                       # Comprehensive privacy architecture documentation
+├── .env                             # Environment configuration
+└── violations.jsonl                 # Auto-generated security violation audit trail
 ```
 
----
+## 🚀 Quick Setup
 
-##  Quick Setup in VS Code (5 minutes)
+### 1. Prerequisites
 
-### Step 1 — Open project in VS Code
-```
-File → Open Folder → select the multi_pdf_rag folder
-```
+- Python 3.10+
+- [Groq API Key](https://console.groq.com/keys)
 
-### Step 2 — Open the integrated terminal
-```
-Terminal → New Terminal   (or Ctrl + ` )
-```
+### 2. Clone and Install
 
-### Step 3 — Create a virtual environment
+Clone the repository and set up a virtual environment:
+
 ```bash
-# Windows
-python -m venv venv
-venv\Scripts\activate
-
-# macOS / Linux
+# Create a virtual environment
 python3 -m venv venv
-source venv/bin/activate
-```
 
-### Step 4 — Install dependencies
-```bash
+# Activate the virtual environment
+# Windows
+venv\Scripts\activate
+# macOS/Linux
+source venv/bin/activate
+
+# Install dependencies
 pip install -r requirements.txt
 ```
-> ⏳ First install takes 3–5 minutes (downloading PyTorch, sentence-transformers, etc.)
 
-### Step 5 — (Recommended) Install Ollama for best LLM quality
+### 3. Environment Configuration
+
+Create a `.env` file in the root directory and configure your keys:
+
 ```bash
-# macOS / Linux
-curl -fsSL https://ollama.com/install.sh | sh
-
-# Windows → download from https://ollama.com/download
-
-# After install, pull a free model:
-ollama pull llama3       # best quality  (~4 GB)
-# OR
-ollama pull mistral      # faster        (~4 GB)
-# OR
-ollama pull phi3         # lightest      (~2 GB)
-
-# Start Ollama server (keep this terminal open):
-ollama serve
+GROQ_API_KEY=your_groq_api_key_here
+DEEPEVAL_THRESHOLD=0.5
 ```
-> **Without Ollama:** The app auto-downloads `google/flan-t5-base` from HuggingFace (~300 MB) on first question.
 
-### Step 6 — Run the app
+### 4. Run the Application
+
+Start the Streamlit application:
+
 ```bash
 streamlit run app.py
 ```
 
-The app opens automatically at **http://localhost:8501** 🎉
+The app will launch automatically at **http://localhost:8501**.
+
+## 📊 Artifacts & Exports
+
+The system intelligently detects when a user is asking for structured data or visualization and can automatically generate and allow downloads for:
+
+- **Data Tables** (displayed dynamically in the UI)
+- **Charts** (Pie, Bar, Line, Histograms)
+- **Excel Documents** (`.xlsx`)
+- **Word Documents** (`.docx`)
+- **PDF Reports** (`.pdf`)
+
+## DeepEval Metrics
+
+Every response can be automatically evaluated if `Evaluate answers` is checked. The RAG system calculates:
+
+- **Answer Relevancy**: Does the answer directly address the question?
+- **Faithfulness**: Is the answer entirely supported by the retrieved document context?
+- **Hallucination Penalty**: Flags information that isn't present in the source documents.
+
+## Support & Troubleshooting
+
+- **No module named 'streamlit'**: Ensure your virtual environment is activated before running the app.
+- **Prompt Security Blocked**: If your input is rejected, ensure you are not requesting PII, toxic content, or attempting a prompt injection.
+- **No relevant content found**: Ensure your uploaded PDF contains actual selectable text, not just scanned images.
 
 ---
 
-## 🖥️ VS Code Tips
-
-| Action | Shortcut |
-|--------|----------|
-| Open terminal | Ctrl + ` |
-| Open file | Ctrl + P → type filename |
-| Stop the app | Ctrl + C in terminal |
-| Restart app | Ctrl + C → `streamlit run app.py` |
-
-**Recommended VS Code extensions:**
-- Python (Microsoft)
-- Pylance
-- Python Indent
-
----
-
-## 🏗️ Architecture
-
-```
-PDF Upload
-    │
-    ▼
-PyPDF (text extraction)
-    │
-    ▼
-RecursiveCharacterTextSplitter
-    chunk_size=800, overlap=150
-    │
-    ▼
-HuggingFace MiniLM-L6-v2 (embeddings)
-    │
-    ▼
-FAISS Vector Store (in-memory)
-    │
-    ▼
-User Question → MiniLM embed → FAISS top-K search
-    │
-    ▼
-Relevance filter (score < 1.6)
-    │
-    ▼
-Ollama / Flan-T5 (strict grounded prompt)
-    │
-    ▼
-Answer + Source citations
-```
-
----
-
-## 🛡️ Anti-Hallucination Design
-
-| Measure | How |
-|---------|-----|
-| Strict prompt | LLM only allowed to use retrieved context |
-| Score filter | Chunks with poor similarity are discarded |
-| Not-found reply | Explicit message if no relevant chunk found |
-| Source attribution | Every answer shows PDF filename + page number |
-
----
-
-## 🔧 LLM Priority (all free)
-
-| Priority | LLM | Quality | Size |
-|----------|-----|---------|------|
-| 1st | Ollama llama3 | ⭐⭐⭐⭐⭐ | ~4 GB |
-| 2nd | Ollama mistral | ⭐⭐⭐⭐ | ~4 GB |
-| 3rd | Ollama phi3 | ⭐⭐⭐ | ~2 GB |
-| Fallback | Flan-T5-base | ⭐⭐ | ~300 MB |
-
----
-
-## ❓ Troubleshooting
-
-**"No module named streamlit"**
-→ Make sure your virtual environment is activated: `venv\Scripts\activate` (Windows) or `source venv/bin/activate` (Mac/Linux)
-
-**Slow first run**
-→ Normal — sentence-transformers model is downloading (~90 MB)
-
-**Ollama not working**
-→ Make sure `ollama serve` is running in a separate terminal
-
-**PDF shows no results**
-→ Some PDFs are image-based (scanned). Try a text-based PDF first.
-
-**Port already in use**
-→ `streamlit run app.py --server.port 8502`
-# LLM_RAAG
+**Maintained by**: Security Team  
+**Version**: 2.0 (Privacy-First)
